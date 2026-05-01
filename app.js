@@ -676,6 +676,14 @@
         renderProjMap();
       });
     });
+    document.querySelectorAll('#racesplit-toggle .seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#racesplit-toggle .seg-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        rsScenario = b.dataset.rs;
+        renderRaceSplit();
+      });
+    });
     document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeDrill));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrill(); });
 
@@ -1095,6 +1103,189 @@
       `<span class="legend-min">R +50</span><span class="legend-grad" style="background:linear-gradient(90deg,#c2253b,#e76f7a,#fffaf0,#6ea4d6,#1d6fb8)"></span><span class="legend-max">D +50</span>`;
   }
 
+  // =================================================================
+  // Senate vs Governor split — side-by-side maps + differential chart
+  // =================================================================
+  let rsScenario = 'baseline';
+
+  function drawRacePane(containerId, marginElId, raceData) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const w = container.clientWidth || 400;
+    const h = 320;
+    const svg = d3.select(container).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+    const projection = d3.geoAlbers().rotate([83.5, 0]).center([0, 32.65]).parallels([30, 35]).scale(w * 6.7).translate([w/2, h/2]);
+    const path = d3.geoPath().projection(projection);
+    const cMap = new Map(raceData.counties.map(c => [c.fips, c]));
+    const scale = d3.scaleLinear()
+      .domain([-50, -10, 0, 10, 50])
+      .range(['#c2253b', '#e76f7a', '#fffaf0', '#6ea4d6', '#1d6fb8'])
+      .clamp(true);
+    svg.append('g').selectAll('path').data(geo.features).enter().append('path')
+      .attr('d', path)
+      .attr('fill', f => {
+        const c = cMap.get(f.id);
+        if (!c) return '#e5e7eb';
+        return scale(c.m26);
+      })
+      .attr('stroke', f => {
+        const c = cMap.get(f.id);
+        if (c && (c.status === 'flips_D' || c.status === 'flips_R')) return '#f5a623';
+        return 'rgba(0,0,0,0.15)';
+      })
+      .attr('stroke-width', f => {
+        const c = cMap.get(f.id);
+        return (c && (c.status === 'flips_D' || c.status === 'flips_R')) ? 2 : 0.4;
+      })
+      .on('mouseenter', function(e, f) {
+        const c = cMap.get(f.id);
+        if (c) {
+          const flipBadge = c.status === 'flips_D' ? ' <span style="color:#1d6fb8;font-weight:700">FLIPS D</span>' :
+                            c.status === 'flips_R' ? ' <span style="color:#c2253b;font-weight:700">FLIPS R</span>' : '';
+          tooltip.innerHTML = `<div class="tt-name">${c.county} County${flipBadge}</div>
+            <div class="tt-row"><span class="tt-label">2024 margin</span><span class="tt-val">${c.m24>=0?'+':''}${c.m24.toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">2026 projected</span><span class="tt-val" style="font-weight:700">${c.m26>=0?'+':''}${c.m26.toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">Shift</span><span class="tt-val">${c.shift>=0?'+':''}${c.shift.toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">D / R</span><span class="tt-val">${fmtNum(c.d_2026)} / ${fmtNum(c.r_2026)}</span></div>`;
+          tooltip.classList.add('show');
+        }
+        d3.select(this).attr('stroke-width', 2.5).attr('stroke', '#1a1d2e');
+      })
+      .on('mousemove', e => moveTooltip(e))
+      .on('mouseleave', function(e, f) {
+        tooltip.classList.remove('show');
+        const c = cMap.get(f.id);
+        const isFlip = c && (c.status === 'flips_D' || c.status === 'flips_R');
+        d3.select(this).attr('stroke-width', isFlip ? 2 : 0.4).attr('stroke', isFlip ? '#f5a623' : 'rgba(0,0,0,0.15)');
+      });
+
+    const sw = raceData.statewide;
+    const winClass = sw.winner === 'D' ? 'win-d' : 'win-r';
+    const sign = sw.margin >= 0 ? '+' : '';
+    document.getElementById(marginElId).innerHTML =
+      `<span class="${winClass}">${sign}${sw.margin.toFixed(1)}pp ${sw.winner}</span>` +
+      ` <span style="font-weight:500;color:var(--ink-2);font-size:13px">±${sw.uncertainty_pp}pp</span>`;
+  }
+
+  function renderRaceSplit() {
+    if (!window.GA_RACE_SPLIT) return;
+    const senate = window.GA_RACE_SPLIT.senate.scenarios[rsScenario];
+    const gov = window.GA_RACE_SPLIT.governor.scenarios[rsScenario];
+    if (!senate || !gov) return;
+
+    drawRacePane('sen-map', 'sen-margin', senate);
+    drawRacePane('gov-map', 'gov-margin', gov);
+
+    // Stats strip
+    const ss = senate.statewide;
+    const gs = gov.statewide;
+    const diff = ss.margin - gs.margin;
+    const senClass = ss.winner === 'D' ? 'win-d' : 'win-r';
+    const govClass = gs.winner === 'D' ? 'win-d' : 'win-r';
+    document.getElementById('racesplit-stats').innerHTML = `
+      <div class="racesplit-stat"><span class="l">Senate margin</span><span class="v ${senClass}">${ss.margin>=0?'+':''}${ss.margin.toFixed(2)}pp</span><span class="sub">${ss.winner} wins · D ${(ss.d_votes/1e6).toFixed(2)}M / R ${(ss.r_votes/1e6).toFixed(2)}M</span></div>
+      <div class="racesplit-stat"><span class="l">Governor margin</span><span class="v ${govClass}">${gs.margin>=0?'+':''}${gs.margin.toFixed(2)}pp</span><span class="sub">${gs.winner} wins · D ${(gs.d_votes/1e6).toFixed(2)}M / R ${(gs.r_votes/1e6).toFixed(2)}M</span></div>
+      <div class="racesplit-stat"><span class="l">Sen vs Gov gap</span><span class="v">${diff>=0?'+':''}${diff.toFixed(2)}pp</span><span class="sub">Ossoff incumbency premium</span></div>
+      <div class="racesplit-stat"><span class="l">County flips</span><span class="v">Sen: ${ss.flips_d>0?`+${ss.flips_d}D`:''}${ss.flips_r>0?`+${ss.flips_r}R`:''}${ss.flips_d===0&&ss.flips_r===0?'0':''} / Gov: ${gs.flips_d>0?`+${gs.flips_d}D`:''}${gs.flips_r>0?`+${gs.flips_r}R`:''}${gs.flips_d===0&&gs.flips_r===0?'0':''}</span><span class="sub">vs 2024 presidential</span></div>
+    `;
+
+    // Legend
+    document.getElementById('racesplit-legend').innerHTML =
+      `<span style="font-weight:600">Projected 2026 margin:</span><span>R +50</span><span style="display:inline-block;width:160px;height:10px;border-radius:5px;background:linear-gradient(90deg,#c2253b,#e76f7a,#fffaf0,#6ea4d6,#1d6fb8)"></span><span>D +50</span><span style="margin-left:auto;"><span style="display:inline-block;width:10px;height:10px;border:2px solid #f5a623;background:#fff;border-radius:2px;vertical-align:middle;margin-right:4px"></span>= flips vs 2024</span>`;
+  }
+
+  function renderRaceDiff() {
+    if (!window.GA_RACE_SPLIT) return;
+    const sen = window.GA_RACE_SPLIT.senate.scenarios.baseline.counties;
+    const gov = window.GA_RACE_SPLIT.governor.scenarios.baseline.counties;
+    const govMap = new Map(gov.map(c => [c.county, c]));
+    const diffs = sen.map(s => {
+      const g = govMap.get(s.county);
+      return { county: s.county, diff: +(s.m26 - g.m26).toFixed(2), ballots: s.ballots_2026 };
+    }).sort((a,b) => b.diff - a.diff);
+    const top15 = diffs.slice(0, 15);
+    const trace = {
+      type: 'bar',
+      orientation: 'h',
+      x: top15.map(d => d.diff).reverse(),
+      y: top15.map(d => d.county).reverse(),
+      marker: { color: top15.map(d => d.diff).reverse(), colorscale: [[0, '#fffaf0'], [1, '#1d6fb8']], showscale: false },
+      text: top15.map(d => `+${d.diff}pp`).reverse(),
+      textposition: 'outside',
+      textfont: { size: 11, color: '#1a1d2e' },
+      hovertemplate: '<b>%{y}</b><br>Sen vs Gov: +%{x}pp<extra></extra>'
+    };
+    Plotly.newPlot('racediff-chart', [trace], {
+      margin: { l: 100, r: 60, t: 12, b: 50 },
+      height: 420,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Inter, sans-serif', size: 12, color: '#1a1d2e' },
+      xaxis: { title: 'Sen margin − Gov margin (pp)', zeroline: true, zerolinecolor: '#c2c0b8', gridcolor: '#ede9dd' },
+      yaxis: { tickfont: { size: 11 }, automargin: true }
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  // =================================================================
+  // Registration tracker
+  // =================================================================
+  function renderRegistration() {
+    if (!window.GA_REGISTRATION) return;
+    const sw = window.GA_REGISTRATION.statewide;
+    const dq = window.GA_REGISTRATION.data_quality || {};
+
+    const fmtDate = s => {
+      try { return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+      catch(e) { return s; }
+    };
+    document.getElementById('reg-asof').textContent = `${fmtDate(sw.baseline_date)} → ${fmtDate(sw.current_date)}`;
+
+    const dirCls = sw.net_change >= 0 ? 'up' : 'dn';
+    const sign = sw.net_change >= 0 ? '+' : '';
+    document.getElementById('reg-stats').innerHTML = `
+      <div class="reg-stat"><span class="l">Baseline</span><span class="v">${sw.baseline.toLocaleString()}</span><span class="sub">${fmtDate(sw.baseline_date)}</span></div>
+      <div class="reg-stat"><span class="l">Current</span><span class="v">${sw.current.toLocaleString()}</span><span class="sub">${fmtDate(sw.current_date)}</span></div>
+      <div class="reg-stat"><span class="l">Net change</span><span class="v ${dirCls}">${sign}${sw.net_change.toLocaleString()}</span><span class="sub">${sign}${sw.pct_change.toFixed(2)}% over 17 months</span></div>
+      <div class="reg-stat"><span class="l">Implied 2026 turnout target</span><span class="v">${(sw.current * 0.57 / 1e6).toFixed(2)}M</span><span class="sub">at 57% midterm rate</span></div>
+    `;
+
+    // Bar visualization: baseline as solid, addition as striped
+    const total = sw.current;
+    const baseW = (sw.baseline / total * 100).toFixed(2);
+    const addW = (Math.max(0, sw.net_change) / total * 100).toFixed(2);
+    document.getElementById('reg-bar-base').style.width = baseW + '%';
+    document.getElementById('reg-bar-add').style.width = addW + '%';
+    document.getElementById('reg-bar-baseline-label').textContent = `Oct 2024 baseline: ${(sw.baseline/1e6).toFixed(2)}M`;
+    document.getElementById('reg-bar-current-label').textContent = `+${(sw.net_change/1000).toFixed(0)}K new (${sign}${sw.pct_change.toFixed(2)}%)`;
+
+    // Data quality footnote
+    const baseConf = (dq.baseline_statewide_confidence || 'medium').toLowerCase();
+    document.getElementById('reg-data-quality').innerHTML =
+      `<strong>Data quality.</strong> Baseline confidence: <em>${baseConf}</em> (Oct 2024 SOS figure cited via secondary source — primary site Cloudflare-protected). ` +
+      `Current figure (March 2026, L2 Political): <em>high</em> confidence. ` +
+      `For context, GA registration grew ~6% from 2020 to 2024; this 0.75% over 17 months is far slower, reflecting saturation of a maturing electorate.`;
+
+    // Verified Nov 2024 baselines table (current column is estimated, so we show baseline only as reference)
+    const verified = window.GA_REGISTRATION.counties.filter(c => c.is_actual_baseline)
+      .sort((a,b) => b.baseline - a.baseline);
+    const totalState = sw.baseline;
+    const rows = verified.map(c => {
+      const sharePct = (c.baseline / totalState * 100).toFixed(2);
+      // Estimated 2026 = scale baseline by statewide growth rate (uniform proportional)
+      const est2026 = Math.round(c.baseline * (sw.current / sw.baseline));
+      const estDelta = est2026 - c.baseline;
+      return `<tr><td>${c.county}</td>
+        <td class="num">${c.baseline.toLocaleString()}</td>
+        <td class="num">${sharePct}%</td>
+        <td class="num">${est2026.toLocaleString()}</td>
+        <td class="num up">+${estDelta.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('reg-counties-table').innerHTML =
+      `<table><thead><tr><th>County</th><th class="num">Nov 2024 actual</th><th class="num">% of state</th><th class="num">Mar 2026 (est.)</th><th class="num">Implied growth</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
   function renderAll() {
     renderKPIs();
     renderMap();
@@ -1107,6 +1298,9 @@
     renderMob26Map();
     renderTargetsTable();
     renderProjMap();
+    renderRaceSplit();
+    renderRaceDiff();
+    renderRegistration();
     renderScatter();
     renderTable();
   }

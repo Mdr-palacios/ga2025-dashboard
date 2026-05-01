@@ -295,6 +295,79 @@
       <p class="hint">Map shows projected 2026 margin by county. Blue = Dem-leaning, red = Rep-leaning. Counties that flip vs 2024 are outlined in gold. Switch scenarios to stress-test the outcome.</p>
     </section>
 
+    <!-- SENATE vs GOVERNOR SPLIT section -->
+    <section class="section-divider">
+      <h2 class="section-title">Senate vs Governor split</h2>
+      <p class="section-lead">The two top-of-ticket 2026 races have different geographic pulls. Ossoff's incumbency premium concentrates in suburban Atlanta — where he overperformed in 2020 and 2024 — and is worth roughly +2pp Dem statewide. The open Governor race has no incumbency, wider candidate uncertainty, and runs ~1pp more Republican-leaning at baseline. Side-by-side maps make the differential visible.</p>
+    </section>
+
+    <section class="card card-racesplit">
+      <div class="card-head">
+        <h3>Side-by-side projection: Senate vs Governor</h3>
+        <div class="seg-group" id="racesplit-toggle">
+          <button class="seg-btn active" data-rs="baseline">Baseline</button>
+          <button class="seg-btn" data-rs="strong_dem">Strong Dem env</button>
+          <button class="seg-btn" data-rs="strong_rep">Strong Rep env</button>
+        </div>
+      </div>
+      <div class="racesplit-stats" id="racesplit-stats"></div>
+      <div class="racesplit-grid">
+        <div class="racesplit-pane">
+          <div class="pane-head"><h4>U.S. Senate <span class="pane-tag">Ossoff (D, incumbent)</span></h4><span class="pane-margin" id="sen-margin">—</span></div>
+          <div id="sen-map" class="map racesplit-map"></div>
+        </div>
+        <div class="racesplit-pane">
+          <div class="pane-head"><h4>Governor <span class="pane-tag">Open seat</span></h4><span class="pane-margin" id="gov-margin">—</span></div>
+          <div id="gov-map" class="map racesplit-map"></div>
+        </div>
+      </div>
+      <div class="racesplit-legend" id="racesplit-legend"></div>
+      <p class="hint"><strong>Differential drivers.</strong> Ossoff incumbency adds ~2pp statewide, with an additional ~1.5pp boost in suburban Atlanta (Cobb, Gwinnett, Fulton, DeKalb, Henry, Cherokee, Forsyth, Douglas, Rockdale, Newton, Fayette, Coweta, Clayton, Paulding). The Governor race is nominee-agnostic in this model — Bottoms vs Duncan vs Thurmond pull different geographies, but the median outcome is wider-uncertainty open-seat baseline. Counties outlined in gold flip vs 2024.</p>
+    </section>
+
+    <section class="card card-racediff">
+      <div class="card-head">
+        <h3>Where the two races diverge most</h3>
+        <span class="muted">Senate margin − Governor margin (pp), baseline scenario</span>
+      </div>
+      <div id="racediff-chart" class="chart"></div>
+      <p class="hint">Counties at the top run more Democratic in the Senate race than the Governor race — the Ossoff suburban-incumbency premium. Counties at the bottom show roughly equal partisan tilt. The differential is largest in the metro Atlanta arc where Ossoff has cultivated a personal brand.</p>
+    </section>
+
+    <!-- REGISTRATION TRENDS section -->
+    <section class="section-divider">
+      <h2 class="section-title">Registration shift since 2024</h2>
+      <p class="section-lead">A modest +0.75% statewide net growth over 17 months — slower than the 2020-2024 cycle. New registrations are not evenly distributed: exurban Atlanta growth counties continue absorbing in-migration, while several rural counties show small absolute declines. Limited county-level data: 5 counties have verified post-Nov 2024 baselines, the remainder are statistical estimates.</p>
+    </section>
+
+    <section class="card card-reg">
+      <div class="card-head">
+        <h3>Statewide registration tracker</h3>
+        <span class="muted" id="reg-asof">As of —</span>
+      </div>
+      <div class="reg-stats" id="reg-stats"></div>
+      <div class="reg-bar-wrap">
+        <div class="reg-bar">
+          <div class="reg-bar-base" id="reg-bar-base"></div>
+          <div class="reg-bar-add" id="reg-bar-add"></div>
+        </div>
+        <div class="reg-bar-labels">
+          <span id="reg-bar-baseline-label">—</span>
+          <span id="reg-bar-current-label">—</span>
+        </div>
+      </div>
+      <p class="hint" id="reg-data-quality"></p>
+    </section>
+
+    <section class="card card-reg-counties">
+      <div class="card-head">
+        <h3>Verified county registration changes</h3>
+        <span class="muted">5 counties with actual Nov 2024 baselines</span>
+      </div>
+      <div id="reg-counties-table" class="table-wrap"></div>
+      <p class="hint"><strong>Why only 5?</strong> Georgia SOS county-level registration files were not directly accessible (Cloudflare-protected). The 5 counties shown have official Nov 5, 2024 registration counts pulled from their county election summary PDFs. The Mar 2026 column applies the statewide +0.75% growth rate uniformly — not a measured per-county delta. A true county-level shift map will require direct SOS county registration data once accessible.</p>
+    </section>
+
     <!-- Methodology callout -->
     <section class="card card-method">
       <div class="card-head">
@@ -323,8 +396,16 @@
           <p>The 2022 Senate (Warnock 50.4% vs Walker 49.5%) and 2024 Pres (Harris 48.9% vs Trump 51.0%) imply a ~3pp midterm penalty for the in-party. Our baseline reproduces an R+1 outcome — consistent with current polling.</p>
         </div>
         <div class="method-cell">
+          <h4>Race-specific overlays</h4>
+          <p>The Senate vs Governor split applies an additional <strong>+2pp Dem layer</strong> for Ossoff incumbency, with <strong>+1.5pp extra in suburban metro Atlanta</strong> (14 counties where Ossoff overperformed in 2020/2024). The Governor race carries no incumbency overlay and a wider ±3pp uncertainty band reflecting open-seat candidate effects.</p>
+        </div>
+        <div class="method-cell">
+          <h4>Registration adjustment</h4>
+          <p>Statewide registration grew <strong>+0.75% (+56K)</strong> from Oct 2024 to March 2026 — modest. The headline projection uses a 7.4M registered baseline; the live registration figure (7.54M) sits ~140K above that and would shift turnout-target ballots by ~80K, well within scenario noise. Per-county registration deltas are not used because only 5 counties have verified data.</p>
+        </div>
+        <div class="method-cell">
           <h4>Important caveats</h4>
-          <p>This is a <em>partisan baseline</em> projection. It does NOT model candidate-specific effects (Ossoff incumbency, open-Governor primary winner), late-campaign news, or registration changes since 2024. Treat as a starting point for scenario thinking, not a forecast.</p>
+          <p>This is a <em>partisan baseline</em> projection. It does NOT model late-campaign news, candidate scandals, or differential ad spending. Treat as a starting point for scenario thinking, not a forecast.</p>
         </div>
       </div>
     </section>
@@ -410,6 +491,8 @@
 <script src="data.js"></script>
 <script src="data_2026.js"></script>
 <script src="data_proj.js"></script>
+<script src="data_race_split.js"></script>
+<script src="data_registration.js"></script>
 <script src="cd-mapping.js"></script>
 <script src="app.js"></script>
 </body>

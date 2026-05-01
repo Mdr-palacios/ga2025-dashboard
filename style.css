@@ -848,3 +848,158 @@ tbody tr.dim { color: var(--muted); }
 .method-cell p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink); }
 .method-cell em { color: #c47216; font-style: italic; }
 .method-cell strong { color: var(--ink); font-weight: 700; }
+
+/* === Senate vs Governor split === */
+.card-racesplit, .card-racediff, .card-reg, .card-reg-counties {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--border, #e8e4d8);
+}
+.racesplit-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 8px 0 14px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  border: 1px solid var(--border, #e8e4d8);
+  font-variant-numeric: tabular-nums;
+}
+.racesplit-stat { display: flex; flex-direction: column; gap: 2px; }
+.racesplit-stat .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 600; }
+.racesplit-stat .v { font-size: 16px; font-weight: 700; color: var(--ink); }
+.racesplit-stat .v.win-d { color: #1d6fb8; }
+.racesplit-stat .v.win-r { color: #c2253b; }
+.racesplit-stat .sub { font-size: 11px; color: var(--ink-2); }
+
+.racesplit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 12px 0;
+}
+@media (max-width: 900px) {
+  .racesplit-grid { grid-template-columns: 1fr; }
+}
+.racesplit-pane {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px 14px 8px;
+  border: 1px solid var(--border, #e8e4d8);
+}
+.pane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.pane-head h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pane-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-left: 6px;
+}
+.pane-margin {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.pane-margin.win-d { color: #1d6fb8; }
+.pane-margin.win-r { color: #c2253b; }
+.racesplit-map { min-height: 320px; }
+.racesplit-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* === Registration tracker === */
+.reg-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 10px 0 16px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  border: 1px solid var(--border, #e8e4d8);
+  font-variant-numeric: tabular-nums;
+}
+.reg-stat { display: flex; flex-direction: column; gap: 2px; }
+.reg-stat .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 600; }
+.reg-stat .v { font-size: 20px; font-weight: 700; color: var(--ink); }
+.reg-stat .v.up { color: #0e7490; }
+.reg-stat .v.dn { color: #c2253b; }
+.reg-stat .sub { font-size: 11px; color: var(--ink-2); }
+
+.reg-bar-wrap { margin: 0 0 4px; }
+.reg-bar {
+  position: relative;
+  height: 36px;
+  background: var(--surface-2);
+  border: 1px solid var(--border, #e8e4d8);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+}
+.reg-bar-base {
+  height: 100%;
+  background: linear-gradient(90deg, #06b6d4, #0e7490);
+}
+.reg-bar-add {
+  height: 100%;
+  background: repeating-linear-gradient(45deg, #f5a623, #f5a623 6px, #f7b94a 6px, #f7b94a 12px);
+}
+.reg-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Verified counties table */
+#reg-counties-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+#reg-counties-table th, #reg-counties-table td {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border, #e8e4d8);
+}
+#reg-counties-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  font-weight: 600;
+}
+#reg-counties-table td.num { text-align: right; }
+#reg-counties-table td.up { color: #0e7490; font-weight: 600; }
+#reg-counties-table td.dn { color: #c2253b; font-weight: 600; }
+
+/* Fixes */
+.pane-head { flex-wrap: wrap; gap: 4px 12px; }
+.pane-head h4 { flex: 1 1 100%; min-width: 0; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pane-tag { margin-left: 0; }
+.pane-margin { flex: 0 0 auto; align-self: baseline; }
+.card-racediff .chart { min-height: 420px; }
