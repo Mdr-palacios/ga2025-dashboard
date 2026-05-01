@@ -729,3 +729,65 @@ tbody tr.dim { color: var(--muted); }
 /* Swing chart needs more vertical room for 21 county bars */
 #swing-chart { height: 540px !important; }
 #demoq-chart { height: 380px !important; }
+
+/* ============ 2026 mobilization outlook ============ */
+.card-mob26 .map { height: 480px; }
+#mob26-map { width: 100%; }
+.card-mob26, .card-targets, .card-midterm { grid-column: 1 / -1; }
+.card-targets table { width: 100%; border-collapse: collapse; }
+.card-targets th, .card-targets td {
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #e8e4d8);
+  color: var(--ink);
+}
+.card-targets th { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.card-targets th.num, .card-targets td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.card-targets tbody tr:nth-child(even) { background: var(--surface-2); }
+.card-targets tbody tr:hover { background: rgba(245, 166, 35, 0.10); }
+.upside-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.upside-D { background: rgba(29,111,184,0.14); color: #1d6fb8; border: 1px solid rgba(29,111,184,0.35); }
+.upside-R { background: rgba(230,57,70,0.14); color: #c2253b; border: 1px solid rgba(230,57,70,0.35); }
+.upside-Mixed { background: rgba(120,120,120,0.10); color: #6c6f7d; border: 1px solid rgba(120,120,120,0.25); }
+.upside-Unknown { background: rgba(120,120,120,0.08); color: #888; }
+
+.why-text { font-size: 12px; color: var(--ink-2); max-width: 280px; line-height: 1.45; }
+
+/* Midterm context grid */
+.midterm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.midterm-cell {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 3px solid #f5a623;
+}
+.midterm-cell h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #c47216;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+.midterm-cell p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.midterm-cell em { color: #c47216; font-style: italic; }
+.midterm-cell strong { color: var(--ink); font-weight: 700; }

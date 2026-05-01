@@ -660,6 +660,14 @@
         renderDemoq();
       });
     });
+    document.querySelectorAll('#mob26-toggle .seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#mob26-toggle .seg-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        mob26Lens = b.dataset.mob26;
+        renderMob26Map();
+      });
+    });
     document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeDrill));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrill(); });
 
@@ -892,6 +900,107 @@
     Plotly.newPlot('demoq-chart', [traceMob, traceShift], layout, { responsive: true, displayModeBar: false });
   }
 
+  // =================================================================
+  // 2026 mobilization potential — composite map + targets table
+  // =================================================================
+  let mob26Lens = 'composite';
+
+  function renderMob26Map() {
+    const container = document.getElementById('mob26-map');
+    if (!container || !window.GA_2026_MOBILIZATION) return;
+    container.innerHTML = '';
+    const w = container.clientWidth || 800;
+    const h = 460;
+    const svg = d3.select(container).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+    const projection = d3.geoAlbers().rotate([83.5, 0]).center([0, 32.65]).parallels([30, 35]).scale(w * 7).translate([w/2, h/2]);
+    const path = d3.geoPath().projection(projection);
+
+    const m26 = window.GA_2026_MOBILIZATION.counties;
+    const m26Map = new Map(m26.map(c => [c.fips, c]));
+    const valid = m26.filter(c => !c.anomaly && c[mob26Lens] != null);
+    const vals = valid.map(c => c[mob26Lens]).sort((a,b) => a-b);
+    const lo = vals[Math.floor(vals.length * 0.05)];
+    const mid = vals[Math.floor(vals.length * 0.5)];
+    const hi = vals[Math.floor(vals.length * 0.95)];
+    // Yellow (low upside) → orange → magenta (high upside)
+    const scale = d3.scaleLinear().domain([lo, mid, hi]).range(['#fff7d6', '#f5a623', '#c2185b']).clamp(true);
+
+    svg.append('g').selectAll('path').data(geo.features).enter().append('path')
+      .attr('d', path)
+      .attr('fill', f => {
+        const c = m26Map.get(f.id);
+        if (!c || c.anomaly || c[mob26Lens] == null) return '#e5e7eb';
+        return scale(c[mob26Lens]);
+      })
+      .attr('stroke', 'rgba(0,0,0,0.15)')
+      .attr('stroke-width', 0.4)
+      .style('cursor', 'pointer')
+      .on('mouseenter', function(e, f) {
+        const c = m26Map.get(f.id);
+        if (c) {
+          tooltip.innerHTML = `<div class="tt-name">${c.county} County</div>
+            <div class="tt-row"><span class="tt-label">Composite</span><span class="tt-val" style="color:#c2185b;font-weight:700">${c.composite != null ? c.composite.toFixed(2) : '—'}</span></div>
+            <div class="tt-row"><span class="tt-label">Turnout gap</span><span class="tt-val">${c.turnout_gap.toFixed(0)}%</span></div>
+            <div class="tt-row"><span class="tt-label">2024 → 2025 margin</span><span class="tt-val">${c.m24>=0?'+':''}${c.m24.toFixed(0)} → ${c.m25>=0?'+':''}${c.m25.toFixed(0)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">Upside</span><span class="tt-val" style="font-weight:700">${c.upside}</span></div>`;
+          tooltip.classList.add('show');
+        }
+        d3.select(this).attr('stroke-width', 1.5).attr('stroke', '#c2185b');
+      })
+      .on('mousemove', e => moveTooltip(e))
+      .on('mouseleave', function() { tooltip.classList.remove('show'); d3.select(this).attr('stroke-width', 0.4).attr('stroke', 'rgba(0,0,0,0.15)'); });
+
+    // Summary above map
+    const lensLabel = {composite:'composite', z_turnout:'turnout-gap', z_close:'persuadable-margin', z_demo:'demographic-underperformance'}[mob26Lens];
+    const top = [...valid].sort((a,b) => b[mob26Lens] - a[mob26Lens]).slice(0, 5);
+    const dCount = valid.filter(c => c.upside === 'D').length;
+    const rCount = valid.filter(c => c.upside === 'R').length;
+    const mCount = valid.filter(c => c.upside === 'Mixed').length;
+    document.getElementById('mob26-summary').innerHTML =
+      `<span class="mobil-stat"><span class="l">Lens</span><span class="v" style="text-transform:capitalize">${lensLabel}</span></span>` +
+      `<span class="mobil-stat"><span class="l">Top 5</span><span class="v">${top.map(c=>c.county).join(', ')}</span></span>` +
+      `<span class="mobil-stat"><span class="l">Upside split (counties)</span><span class="v">D ${dCount} · R ${rCount} · Mixed ${mCount}</span></span>`;
+
+    const lg = document.getElementById('mob26-legend');
+    lg.innerHTML = `<span class="legend-min">${lo.toFixed(1)}</span><span class="legend-grad" style="background:linear-gradient(90deg,#fff7d6,#f5a623,#c2185b)"></span><span class="legend-max">${hi.toFixed(1)}</span>`;
+  }
+
+  function whyText(c) {
+    // Identify which lens drives this county's score most
+    const parts = [];
+    if (c.z_turnout >= 0.7) parts.push('big turnout drop');
+    if (c.z_close >= 0.7) parts.push('close margin both cycles');
+    if (c.z_demo >= 0.7) parts.push('underperforming its demographics');
+    if (parts.length === 0) {
+      // pick largest
+      const arr = [['turnout drop', c.z_turnout], ['close margin', c.z_close], ['demo underperf', c.z_demo]];
+      arr.sort((a,b) => b[1] - a[1]);
+      parts.push(arr[0][0]);
+    }
+    return parts.join(' + ');
+  }
+
+  function renderTargetsTable() {
+    if (!window.GA_2026_MOBILIZATION) return;
+    const tbody = document.getElementById('targets-tbody');
+    if (!tbody) return;
+    const list = window.GA_2026_MOBILIZATION.counties
+      .filter(c => !c.anomaly && c.composite != null)
+      .sort((a,b) => b.composite - a.composite)
+      .slice(0, 20);
+    tbody.innerHTML = list.map((c, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td><strong>${c.county}</strong></td>
+        <td class="num">${c.composite.toFixed(2)}</td>
+        <td class="num">${c.turnout_gap.toFixed(0)}%</td>
+        <td class="num">${c.m24>=0?'+':''}${c.m24.toFixed(0)}pp</td>
+        <td class="num">${c.m25>=0?'+':''}${c.m25.toFixed(0)}pp</td>
+        <td><span class="upside-pill upside-${c.upside}">${c.upside}</span></td>
+        <td><span class="why-text">${whyText(c)}</span></td>
+      </tr>`).join('');
+  }
+
   function renderAll() {
     renderKPIs();
     renderMap();
@@ -901,6 +1010,8 @@
     renderShiftMap();
     renderSwingChart();
     renderDemoq();
+    renderMob26Map();
+    renderTargetsTable();
     renderScatter();
     renderTable();
   }

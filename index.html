@@ -189,6 +189,89 @@
       <p class="hint" id="demoq-hint">Counties grouped into quartiles by demographic. Bars: ballot-weighted average mobilization (PSC ÷ 2024) and margin shift in each quartile.</p>
     </section>
 
+    <!-- 2026 MIDTERM OUTLOOK section -->
+    <section class="section-divider">
+      <h2 class="section-title">2026 mobilization outlook</h2>
+      <p class="section-lead">A composite score across three lenses — turnout gap vs 2024, persuadable margin, and demographic underperformance — surfaces where 2026 organizing dollars may have the highest marginal return. Neutral framing: each county is tagged with which party demobilized harder, i.e. which side has more recovery upside.</p>
+    </section>
+
+    <!-- 2026 composite map + targets -->
+    <section class="card card-mob26">
+      <div class="card-head">
+        <h3>2026 mobilization potential, by county</h3>
+        <div class="seg-group" id="mob26-toggle">
+          <button class="seg-btn active" data-mob26="composite">Composite</button>
+          <button class="seg-btn" data-mob26="z_turnout">Turnout gap</button>
+          <button class="seg-btn" data-mob26="z_close">Persuadable</button>
+          <button class="seg-btn" data-mob26="z_demo">Demo underperf</button>
+        </div>
+      </div>
+      <div id="mob26-summary" class="shift-summary"></div>
+      <div id="mob26-map" class="map shift-map"></div>
+      <div id="mob26-legend" class="legend-bar"></div>
+      <p class="hint">Higher score = more upside. Composite weights: turnout gap 40%, persuadable margin 35%, demographic underperformance 25%. Click a lens to see which factor drives the score.</p>
+    </section>
+
+    <!-- Top targets list -->
+    <section class="card card-targets">
+      <div class="card-head">
+        <h3>Top 20 target counties</h3>
+        <span class="muted">Ranked by composite score</span>
+      </div>
+      <div class="table-wrap">
+        <table id="targets-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>County</th>
+              <th class="num">Composite</th>
+              <th class="num">Turnout gap</th>
+              <th class="num">2024 margin</th>
+              <th class="num">2025 margin</th>
+              <th>Upside</th>
+              <th>Why it ranks</th>
+            </tr>
+          </thead>
+          <tbody id="targets-tbody"></tbody>
+        </table>
+      </div>
+      <p class="hint"><strong>Upside</strong> = which party demobilized harder vs 2024; that side has more recoverable voters in a midterm. Counties tagged <em>Mixed</em> have roughly symmetric drop-off.</p>
+    </section>
+
+    <!-- Midterm context callout -->
+    <section class="card card-midterm">
+      <div class="card-head">
+        <h3>What changes in a midterm</h3>
+        <span class="muted">Factors that reshape the 2025 → 2026 translation</span>
+      </div>
+      <div class="midterm-grid">
+        <div class="midterm-cell">
+          <h4>Top of ticket</h4>
+          <p>2026 ballot: <strong>Ossoff Senate re-elect</strong>, <strong>open Governor</strong> (Kemp term-limited), Lt. Gov, AG, SoS. Senate races in GA pull ~85% of presidential turnout vs ~22% for this PSC race — a fundamentally larger, less-partisan electorate.</p>
+        </div>
+        <div class="midterm-cell">
+          <h4>Midterm penalty</h4>
+          <p>The president's party historically loses ~2.4pp of vote share in midterms. With Trump in office, this tailwinds Democrats — but the magnitude varies enormously by suburban vs rural geography.</p>
+        </div>
+        <div class="midterm-cell">
+          <h4>Drop-off bias</h4>
+          <p>Young and Latino voters drop off most from presidential to midterm; Black voters and college-educated whites drop off least. The 2025 R-demobilization gap likely <em>overstates</em> the 2026 effect, since off-year specials over-weight the most habitual partisans.</p>
+        </div>
+        <div class="midterm-cell">
+          <h4>Geographic shift</h4>
+          <p>Exurban Atlanta growth — Forsyth, Cherokee, Hall, Henry, Paulding — is structurally reshaping the electorate independent of mobilization. Forsyth ranks #12 here on demographic underperformance alone.</p>
+        </div>
+        <div class="midterm-cell">
+          <h4>Election rules</h4>
+          <p>SB 202 effects, precinct consolidation, drop-box availability, and any pending voter-roll maintenance shape the 2026 baseline accessibility — particularly in rural majority-Black counties where infrastructure is thinnest.</p>
+        </div>
+        <div class="midterm-cell">
+          <h4>Special-election caveat</h4>
+          <p>Off-year electorates are not microcosms of midterm electorates. Use 2025 patterns to <em>identify</em> targets, but expect partisan retention gaps to compress as turnout scales 4× toward presidential levels.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Demographic correlations -->
     <section class="card card-demo">
       <div class="card-head">
@@ -268,6 +351,7 @@
 </div>
 
 <script src="data.js"></script>
+<script src="data_2026.js"></script>
 <script src="cd-mapping.js"></script>
 <script src="app.js"></script>
 </body>
