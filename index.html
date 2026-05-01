@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Georgia 2025 Election Dashboard — Turnout, Methods & Demographics</title>
+<meta name="description" content="Interactive dashboard for the 2025 Georgia Public Service Commission special election. County heat map, voting method breakdown, demographic correlations, and congressional district analysis." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<link rel="stylesheet" href="style.css" />
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f172a'/%3E%3Cpath d='M8 22V10h4l4 7V10h4v12h-4l-4-7v7H8z' fill='%23fff'/%3E%3C/svg%3E" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <svg class="logo" width="36" height="36" viewBox="0 0 36 36" aria-label="GA25 Dashboard">
+        <rect x="0" y="0" width="36" height="36" rx="7" fill="var(--ink)"/>
+        <text x="18" y="14" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="white" letter-spacing="0.5">GA</text>
+        <text x="18" y="26" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--accent)">25</text>
+      </svg>
+      <div class="header-title">
+        <h1>Georgia 2025 Election</h1>
+        <p class="subtitle">Public Service Commission Special &middot; November 4, 2025</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="stat-pill">
+        <span class="pill-label">Turnout</span>
+        <span class="pill-value" id="hdr-turnout">21.9%</span>
+      </div>
+      <div class="stat-pill">
+        <span class="pill-label">Ballots</span>
+        <span class="pill-value" id="hdr-ballots">1.58M</span>
+      </div>
+      <a class="data-link" href="https://app.enhancedvoting.com/results/public/Georgia/elections/MunicipalGeneralSpecialElectionPSC11042025/reports" target="_blank" rel="noopener">Source data ↗</a>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <section class="filters">
+    <div class="filter-group">
+      <label>Race</label>
+      <div class="seg-control" id="race-toggle">
+        <button class="seg active" data-race="d2">PSC District 2</button>
+        <button class="seg" data-race="d3">PSC District 3</button>
+        <button class="seg" data-race="combined">Combined</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Map metric</label>
+      <select id="metric-select" class="select">
+        <option value="turnout_pct_vap">Turnout (% of VAP)</option>
+        <option value="margin">Dem margin (pp)</option>
+        <option value="dem_pct">Democratic %</option>
+        <option value="rep_pct">Republican %</option>
+        <option value="total_ballots">Ballots cast</option>
+        <option value="pct_advance_in_person">Early (in-person) %</option>
+        <option value="pct_election_day">Election Day %</option>
+        <option value="pct_absentee_mail">Absentee mail %</option>
+        <option value="mobilization_2024">Mobilization vs 2024 general</option>
+        <option value="mobilization_2022">Mobilization vs 2022 midterm</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Aggregation</label>
+      <div class="seg-control" id="agg-toggle">
+        <button class="seg active" data-agg="county">County</button>
+        <button class="seg" data-agg="cd">Congressional</button>
+        <button class="seg" data-agg="region">Region</button>
+      </div>
+    </div>
+    <div class="filter-group" style="margin-left:auto;">
+      <label>Search</label>
+      <input id="county-search" class="search-input" placeholder="Filter county…" />
+    </div>
+  </section>
+
+  <!-- KPI strip -->
+  <section class="kpi-row" id="kpi-row"></section>
+
+  <!-- Main content grid -->
+  <main class="grid">
+
+    <!-- Map (heat map) -->
+    <section class="card card-map">
+      <div class="card-head">
+        <h3 id="map-title">County turnout heat map</h3>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div id="map" class="map-canvas"></div>
+      <div class="map-foot">
+        <span class="hint">Click a county to drill down · Hover for details</span>
+      </div>
+    </section>
+
+    <!-- Voting method breakdown -->
+    <section class="card">
+      <div class="card-head">
+        <h3>Vote method breakdown</h3>
+        <span class="muted" id="method-context">Statewide</span>
+      </div>
+      <div id="method-chart" class="chart"></div>
+      <div class="method-stats" id="method-stats"></div>
+    </section>
+
+    <!-- Congressional district -->
+    <section class="card">
+      <div class="card-head">
+        <h3>By congressional district</h3>
+        <span class="muted">Dem vs Rep share</span>
+      </div>
+      <div id="cd-chart" class="chart"></div>
+    </section>
+
+    <!-- Mobilization vs prior cycles -->
+    <section class="card card-mobilization">
+      <div class="card-head">
+        <h3>Where the PSC race mobilized voters most</h3>
+        <div class="seg-group" id="mobil-toggle">
+          <button class="seg-btn active" data-mobil="mobilization_2024">vs 2024 general</button>
+          <button class="seg-btn" data-mobil="mobilization_2022">vs 2022 midterm</button>
+        </div>
+      </div>
+      <div class="mobil-summary" id="mobil-summary"></div>
+      <div class="mobil-grid">
+        <div>
+          <h4 class="mobil-subtitle">Top 10 — strongest mobilization</h4>
+          <div id="mobil-top" class="mobil-list"></div>
+        </div>
+        <div>
+          <h4 class="mobil-subtitle">Bottom 10 — weakest mobilization</h4>
+          <div id="mobil-bot" class="mobil-list"></div>
+        </div>
+      </div>
+      <p class="hint">PSC ballots cast ÷ prior cycle ballots, by county. Higher = the PSC race held its weight better in that county. Statewide retention: <strong id="mobil-state">—</strong>.</p>
+    </section>
+
+    <!-- Demographic correlations -->
+    <section class="card card-demo">
+      <div class="card-head">
+        <h3>Demographics × turnout</h3>
+        <select id="demo-x" class="select select-sm">
+          <option value="pct_black">% Black population</option>
+          <option value="pct_white">% White population</option>
+          <option value="pct_hispanic">% Hispanic population</option>
+          <option value="median_income">Median household income</option>
+          <option value="median_age">Median age</option>
+          <option value="pct_bachelors_plus_25">% Bachelor's+ (age 25+)</option>
+        </select>
+        <select id="demo-y" class="select select-sm">
+          <option value="turnout_pct_vap">Turnout (% VAP)</option>
+          <option value="d2_dem_pct" selected>Democratic %</option>
+          <option value="d2_margin">Dem margin (pp)</option>
+          <option value="pct_advance_in_person">Early in-person %</option>
+        </select>
+      </div>
+      <div id="scatter-chart" class="chart"></div>
+      <div class="demo-stats" id="demo-stats"></div>
+    </section>
+
+    <!-- County leaderboard -->
+    <section class="card card-table">
+      <div class="card-head">
+        <h3>County leaderboard</h3>
+        <div class="table-controls">
+          <button class="seg-mini active" data-sort="total_ballots">Most votes</button>
+          <button class="seg-mini" data-sort="turnout_pct_vap">Highest turnout</button>
+          <button class="seg-mini" data-sort="d2_margin">Strongest D</button>
+          <button class="seg-mini" data-sort="d2_margin_rev">Strongest R</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="county-table">
+          <thead>
+            <tr>
+              <th>County</th>
+              <th class="num">Ballots</th>
+              <th class="num">Turnout</th>
+              <th class="num">Dem %</th>
+              <th class="num">Rep %</th>
+              <th class="num">Margin</th>
+              <th class="num">Early</th>
+              <th class="num">E-Day</th>
+              <th class="num">Mail</th>
+            </tr>
+          </thead>
+          <tbody id="county-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div>
+      <strong>Data:</strong> Georgia Secretary of State (Enhanced Voting), U.S. Census ACS 5-Year 2023.
+      Turnout = ballots cast ÷ estimated voting-age population (VAP, ~77% of total population).
+      <span class="badge">Provisional ballots included in totals</span>
+    </div>
+    <div class="muted">
+      Built as a data-exploration tool. Fitz Johnson D3 totals for Fulton estimated from D2 vote share due to a known SoS export reporting issue.
+    </div>
+  </footer>
+
+</div>
+
+<!-- Drill-down modal -->
+<div id="drill-modal" class="modal" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-panel">
+    <button class="modal-close" data-close aria-label="Close">×</button>
+    <div id="drill-content"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="cd-mapping.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
