@@ -791,3 +791,60 @@ tbody tr.dim { color: var(--muted); }
 }
 .midterm-cell em { color: #c47216; font-style: italic; }
 .midterm-cell strong { color: var(--ink); font-weight: 700; }
+
+/* ============ 2026 projection ============ */
+.card-proj, .card-method { grid-column: 1 / -1; }
+.card-proj .map { height: 480px; }
+#proj-map { width: 100%; }
+
+.proj-statewide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 12px 0 8px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  border: 1px solid var(--border, #e8e4d8);
+}
+.proj-stat { display: flex; flex-direction: column; gap: 2px; }
+.proj-stat .l { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 600; }
+.proj-stat .v { font-size: 18px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.proj-stat .v.win-d { color: #1d6fb8; }
+.proj-stat .v.win-r { color: #c2253b; }
+.proj-stat .sub { font-size: 11px; color: var(--ink-2); }
+
+.proj-desc {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 0 0 16px 0;
+  padding: 8px 14px;
+  border-left: 3px solid #f5a623;
+  background: rgba(245, 166, 35, 0.06);
+  border-radius: 0 6px 6px 0;
+}
+
+/* Methodology grid mirrors midterm-grid */
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.method-cell {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 14px 16px;
+  border-left: 3px solid #06b6d4;
+}
+.method-cell h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #0e7490;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+.method-cell p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink); }
+.method-cell em { color: #c47216; font-style: italic; }
+.method-cell strong { color: var(--ink); font-weight: 700; }

@@ -668,6 +668,14 @@
         renderMob26Map();
       });
     });
+    document.querySelectorAll('#proj-toggle .seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#proj-toggle .seg-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        projScenario = b.dataset.proj;
+        renderProjMap();
+      });
+    });
     document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeDrill));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrill(); });
 
@@ -1001,6 +1009,92 @@
       </tr>`).join('');
   }
 
+  // =================================================================
+  // 2026 midterm projection — scenario-based map
+  // =================================================================
+  let projScenario = 'baseline';
+
+  function fmtNum(n) { return n >= 1e6 ? (n/1e6).toFixed(2) + 'M' : n >= 1e3 ? (n/1e3).toFixed(0) + 'K' : String(n); }
+
+  function renderProjMap() {
+    const container = document.getElementById('proj-map');
+    if (!container || !window.GA_2026_PROJECTION) return;
+    const data = window.GA_2026_PROJECTION[projScenario];
+    if (!data) return;
+
+    container.innerHTML = '';
+    const w = container.clientWidth || 800;
+    const h = 460;
+    const svg = d3.select(container).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+    const projection = d3.geoAlbers().rotate([83.5, 0]).center([0, 32.65]).parallels([30, 35]).scale(w * 7).translate([w/2, h/2]);
+    const path = d3.geoPath().projection(projection);
+
+    const cMap = new Map(data.counties.map(c => [c.fips, c]));
+
+    // Diverging scale: red (R+50) — white — blue (D+50)
+    const scale = d3.scaleLinear()
+      .domain([-50, -10, 0, 10, 50])
+      .range(['#c2253b', '#e76f7a', '#fffaf0', '#6ea4d6', '#1d6fb8'])
+      .clamp(true);
+
+    svg.append('g').selectAll('path').data(geo.features).enter().append('path')
+      .attr('d', path)
+      .attr('fill', f => {
+        const c = cMap.get(f.id);
+        if (!c) return '#e5e7eb';
+        return scale(c.m26);
+      })
+      .attr('stroke', f => {
+        const c = cMap.get(f.id);
+        if (c && (c.status === 'flips_D' || c.status === 'flips_R')) return '#f5a623';
+        return 'rgba(0,0,0,0.15)';
+      })
+      .attr('stroke-width', f => {
+        const c = cMap.get(f.id);
+        return (c && (c.status === 'flips_D' || c.status === 'flips_R')) ? 2 : 0.4;
+      })
+      .style('cursor', 'pointer')
+      .on('mouseenter', function(e, f) {
+        const c = cMap.get(f.id);
+        if (c) {
+          const flipBadge = c.status === 'flips_D' ? ' <span style="color:#1d6fb8;font-weight:700">FLIPS D</span>' :
+                            c.status === 'flips_R' ? ' <span style="color:#c2253b;font-weight:700">FLIPS R</span>' : '';
+          tooltip.innerHTML = `<div class="tt-name">${c.county} County${flipBadge}</div>
+            <div class="tt-row"><span class="tt-label">2024 margin</span><span class="tt-val">${c.m24>=0?'+':''}${c.m24.toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">2026 projected</span><span class="tt-val" style="font-weight:700">${c.m26>=0?'+':''}${c.m26.toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">Shift</span><span class="tt-val">${c.shift>=0?'+':''}${c.shift.toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">Projected ballots</span><span class="tt-val">${c.ballots_2026.toLocaleString()}</span></div>
+            <div class="tt-row"><span class="tt-label">D / R</span><span class="tt-val">${fmtNum(c.d_2026)} / ${fmtNum(c.r_2026)}</span></div>`;
+          tooltip.classList.add('show');
+        }
+        d3.select(this).attr('stroke-width', 2.5).attr('stroke', '#1a1d2e');
+      })
+      .on('mousemove', e => moveTooltip(e))
+      .on('mouseleave', function(e, f) {
+        tooltip.classList.remove('show');
+        const c = cMap.get(f.id);
+        const isFlip = c && (c.status === 'flips_D' || c.status === 'flips_R');
+        d3.select(this).attr('stroke-width', isFlip ? 2 : 0.4).attr('stroke', isFlip ? '#f5a623' : 'rgba(0,0,0,0.15)');
+      });
+
+    // Statewide stats
+    const s = data.statewide;
+    const winClass = s.winner === 'D' ? 'win-d' : 'win-r';
+    const winLabel = s.winner === 'D' ? 'Dems win' : 'Reps win';
+    document.getElementById('proj-statewide').innerHTML = `
+      <div class="proj-stat"><span class="l">Outcome</span><span class="v ${winClass}">${winLabel}</span><span class="sub">by ${Math.abs(s.margin).toFixed(1)}pp</span></div>
+      <div class="proj-stat"><span class="l">Projected ballots</span><span class="v">${(s.ballots/1e6).toFixed(2)}M</span><span class="sub">${s.turnout_pct}% turnout</span></div>
+      <div class="proj-stat"><span class="l">Dem votes</span><span class="v win-d">${(s.d_votes/1e6).toFixed(2)}M</span></div>
+      <div class="proj-stat"><span class="l">Rep votes</span><span class="v win-r">${(s.r_votes/1e6).toFixed(2)}M</span></div>
+      <div class="proj-stat"><span class="l">Counties flip</span><span class="v">${s.flips_d > 0 ? `+${s.flips_d} D` : ''}${s.flips_r > 0 ? `+${s.flips_r} R` : ''}${s.flips_d === 0 && s.flips_r === 0 ? '0' : ''}</span><span class="sub">vs 2024</span></div>
+    `;
+    document.getElementById('proj-desc').innerHTML = `<strong>${data.name}.</strong> ${data.description}`;
+
+    // Legend
+    document.getElementById('proj-legend').innerHTML =
+      `<span class="legend-min">R +50</span><span class="legend-grad" style="background:linear-gradient(90deg,#c2253b,#e76f7a,#fffaf0,#6ea4d6,#1d6fb8)"></span><span class="legend-max">D +50</span>`;
+  }
+
   function renderAll() {
     renderKPIs();
     renderMap();
@@ -1012,6 +1106,7 @@
     renderDemoq();
     renderMob26Map();
     renderTargetsTable();
+    renderProjMap();
     renderScatter();
     renderTable();
   }

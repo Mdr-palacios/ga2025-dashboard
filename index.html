@@ -272,6 +272,63 @@
       </div>
     </section>
 
+    <!-- 2026 PROJECTION section -->
+    <section class="section-divider">
+      <h2 class="section-title">2026 midterm simulation</h2>
+      <p class="section-lead">What does Georgia look like at midterm-baseline turnout (~55%, vs 22% for the 2025 PSC)? This simulation projects ballots cast and partisan splits per county under three scenarios. Calibrated against 2022 vs 2024 actuals to reproduce a realistic R+1 baseline (matching current Ossoff vs Carter polling).</p>
+    </section>
+
+    <!-- Scenario toggle + statewide outcome -->
+    <section class="card card-proj">
+      <div class="card-head">
+        <h3>Projected 2026 outcome</h3>
+        <div class="seg-group" id="proj-toggle">
+          <button class="seg-btn active" data-proj="baseline">Baseline</button>
+          <button class="seg-btn" data-proj="strong_dem">Strong Dem env</button>
+          <button class="seg-btn" data-proj="strong_rep">Strong Rep env</button>
+        </div>
+      </div>
+      <div class="proj-statewide" id="proj-statewide"></div>
+      <div class="proj-desc" id="proj-desc"></div>
+      <div id="proj-map" class="map shift-map"></div>
+      <div id="proj-legend" class="legend-bar"></div>
+      <p class="hint">Map shows projected 2026 margin by county. Blue = Dem-leaning, red = Rep-leaning. Counties that flip vs 2024 are outlined in gold. Switch scenarios to stress-test the outcome.</p>
+    </section>
+
+    <!-- Methodology callout -->
+    <section class="card card-method">
+      <div class="card-head">
+        <h3>How this projection works</h3>
+        <span class="muted">Methodology &amp; assumptions</span>
+      </div>
+      <div class="method-grid">
+        <div class="method-cell">
+          <h4>Turnout target</h4>
+          <p><strong>57% of registered voters</strong> (~4.0M ballots), based on the 2022 (~57%) and 2018 (~55%) GA midterm baselines. Per-county turnout uses each county's own 2022/2024 history blended with the statewide target.</p>
+        </div>
+        <div class="method-cell">
+          <h4>Partisan drop-off</h4>
+          <p>Dem coalition drops <strong>~22%</strong> from presidential to midterm (Black voters drop ~25%, Latino ~35%, young ~40%). GOP coalition drops <strong>~18%</strong> (older, whiter coalition retains better).</p>
+        </div>
+        <div class="method-cell">
+          <h4>National environment swing</h4>
+          <p>Baseline applies a <strong>+5pp Dem swing</strong> on top of drop-off, matching the historical midterm penalty for the in-party (here, Trump). Stress scenarios add ±5pp on top.</p>
+        </div>
+        <div class="method-cell">
+          <h4>County-level adjustment</h4>
+          <p>Counties with high % Black or Latino population see slightly higher Dem drop-off; high % college-educated counties retain better. Heavily white non-college counties retain GOP votes better than urban counties.</p>
+        </div>
+        <div class="method-cell">
+          <h4>Calibration check</h4>
+          <p>The 2022 Senate (Warnock 50.4% vs Walker 49.5%) and 2024 Pres (Harris 48.9% vs Trump 51.0%) imply a ~3pp midterm penalty for the in-party. Our baseline reproduces an R+1 outcome — consistent with current polling.</p>
+        </div>
+        <div class="method-cell">
+          <h4>Important caveats</h4>
+          <p>This is a <em>partisan baseline</em> projection. It does NOT model candidate-specific effects (Ossoff incumbency, open-Governor primary winner), late-campaign news, or registration changes since 2024. Treat as a starting point for scenario thinking, not a forecast.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Demographic correlations -->
     <section class="card card-demo">
       <div class="card-head">
@@ -352,6 +409,7 @@
 
 <script src="data.js"></script>
 <script src="data_2026.js"></script>
+<script src="data_proj.js"></script>
 <script src="cd-mapping.js"></script>
 <script src="app.js"></script>
 </body>
