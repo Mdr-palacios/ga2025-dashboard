@@ -666,3 +666,66 @@ tbody tr.dim { color: var(--muted); }
 .seg-btn:hover:not(.active) {
   color: var(--ink);
 }
+
+/* ============================================
+   "What flipped Georgia" section
+   ============================================ */
+.section-divider {
+  grid-column: 1 / -1;
+  padding: 32px 4px 8px;
+  border-top: 2px solid var(--ink);
+  margin-top: 16px;
+}
+.section-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+.section-lead {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 720px;
+  margin: 0;
+}
+.card-shift, .card-swing, .card-demoq {
+  grid-column: 1 / -1;
+}
+.shift-map { min-height: 460px; }
+.shift-summary, .swing-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.legend-grad {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  max-width: 280px;
+}
+.legend-min, .legend-max {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .shift-map { min-height: 320px; }
+  .section-title { font-size: 18px; }
+}
+
+/* Swing chart needs more vertical room for 21 county bars */
+#swing-chart { height: 540px !important; }
+#demoq-chart { height: 380px !important; }

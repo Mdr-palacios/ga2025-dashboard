@@ -166,7 +166,7 @@
         <p class="kpi-value">${(av/totalMethod*100).toFixed(1)}%</p>
         <p class="kpi-sub">${fmtCompact(av)} ballots</p></div>
       <div class="kpi"><p class="kpi-label">Counties Flipped</p>
-        <p class="kpi-value">22</p>
+        <p class="kpi-value">21</p>
         <p class="kpi-sub">flipped from Trump 2024</p></div>
     `;
 
@@ -652,6 +652,14 @@
         renderMobilization();
       });
     });
+    document.querySelectorAll('#demoq-toggle .seg-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#demoq-toggle .seg-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.demoqMetric = b.dataset.demoq;
+        renderDemoq();
+      });
+    });
     document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeDrill));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrill(); });
 
@@ -722,12 +730,177 @@
     });
   }
 
+  // =================================================================
+  // Margin shift map (vs 2024 presidential)
+  // =================================================================
+  function renderShiftMap() {
+    const container = document.getElementById('shift-map');
+    if (!container) return;
+    container.innerHTML = '';
+    const w = container.clientWidth || 800;
+    const h = 460;
+    const svg = d3.select(container).append('svg').attr('viewBox', `0 0 ${w} ${h}`);
+    const projection = d3.geoAlbers().rotate([83.5, 0]).center([0, 32.65]).parallels([30, 35]).scale(w * 7).translate([w/2, h/2]);
+    const path = d3.geoPath().projection(projection);
+
+    // Diverging scale: 0 to +60pp shift (all shifted Dem). Use cyan/teal sequential since direction is uniform.
+    const valid = counties.filter(c => c.margin_shift != null && !c.data_anomaly);
+    const maxShift = d3.max(valid, c => c.margin_shift);
+    const minShift = d3.min(valid, c => c.margin_shift);
+    const scale = d3.scaleLinear().domain([Math.max(5, minShift), 25, maxShift]).range(['#fef3c7', '#06b6d4', '#0e7490']).clamp(true);
+
+    svg.append('g').selectAll('path').data(geo.features).enter().append('path')
+      .attr('d', path)
+      .attr('fill', f => {
+        const c = counties.find(x => x.fips === f.id);
+        if (!c || c.margin_shift == null || c.data_anomaly) return '#e5e7eb';
+        return scale(c.margin_shift);
+      })
+      .attr('stroke', 'rgba(0,0,0,0.15)')
+      .attr('stroke-width', 0.4)
+      .style('cursor', 'pointer')
+      .on('mouseenter', function(e, f) {
+        const c = counties.find(x => x.fips === f.id);
+        if (c) {
+          const s = c.margin_shift != null ? `${c.margin_shift >= 0 ? '+' : ''}${c.margin_shift.toFixed(1)}pp` : '—';
+          tooltip.innerHTML = `<div class="tt-name">${c.county} County</div>
+            <div class="tt-row"><span class="tt-label">2024 margin</span><span class="tt-val">${c.margin_2024 >= 0 ? '+' : ''}${(c.margin_2024||0).toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">PSC margin</span><span class="tt-val">${c.d2_margin >= 0 ? '+' : ''}${(c.d2_margin||0).toFixed(1)}pp</span></div>
+            <div class="tt-row"><span class="tt-label">Shift</span><span class="tt-val" style="color:#0e7490;font-weight:700">${s}</span></div>`;
+          tooltip.classList.add('show');
+        }
+        d3.select(this).attr('stroke-width', 1.5).attr('stroke', '#0e7490');
+      })
+      .on('mousemove', e => moveTooltip(e))
+      .on('mouseleave', function() { tooltip.classList.remove('show'); d3.select(this).attr('stroke-width', 0.4).attr('stroke', 'rgba(0,0,0,0.15)'); })
+      .on('click', (e, f) => { const c = counties.find(x => x.fips === f.id); if (c) openDrill(c); });
+
+    // Summary stats above
+    const ballotWeighted = valid.reduce((s,c) => s + c.margin_shift * c.total_ballots, 0) / valid.reduce((s,c) => s+c.total_ballots, 0);
+    const median = valid.map(c=>c.margin_shift).sort((a,b)=>a-b)[Math.floor(valid.length/2)];
+    const max = valid.reduce((a,b) => a.margin_shift > b.margin_shift ? a : b);
+    document.getElementById('shift-summary').innerHTML =
+      `<span class="mobil-stat"><span class="l">Statewide avg shift</span><span class="v">+${ballotWeighted.toFixed(1)}pp toward Dems</span></span>` +
+      `<span class="mobil-stat"><span class="l">County median</span><span class="v">+${median.toFixed(1)}pp</span></span>` +
+      `<span class="mobil-stat"><span class="l">Largest shift</span><span class="v">${max.county} · +${max.margin_shift.toFixed(1)}pp</span></span>` +
+      `<span class="mobil-stat"><span class="l">Counties shifted Dem</span><span class="v">${valid.filter(c => c.margin_shift > 0).length} of ${valid.length}</span></span>`;
+
+    // Legend
+    const lg = document.getElementById('shift-legend');
+    lg.innerHTML = `<span class="legend-min">+${Math.max(5,minShift).toFixed(0)}pp</span><span class="legend-grad" style="background:linear-gradient(90deg,#fef3c7,#06b6d4,#0e7490)"></span><span class="legend-max">+${maxShift.toFixed(0)}pp</span>`;
+  }
+
+  // =================================================================
+  // Swing decomposition (D vs R retention in flipped counties)
+  // =================================================================
+  function renderSwingChart() {
+    const flipped = (window.GA_FLIPPED || []).slice().sort((a,b) => b.shift - a.shift);
+    const stateRet = window.GA_STATE_RETENTION || {d:0, r:0};
+    document.getElementById('swing-state-d').textContent = stateRet.d + '%';
+    document.getElementById('swing-state-r').textContent = stateRet.r + '%';
+
+    const counties_y = flipped.map(f => f.county);
+    // Diff bars: D-retention positive (right), R-retention as negative (left) for visual separation
+    const traceD = {
+      x: flipped.map(f => f.d_retention || 0),
+      y: counties_y,
+      type: 'bar', orientation: 'h', name: 'Dem retention',
+      marker: { color: '#1d6fb8' },
+      hovertemplate: '%{y}: <b>%{x:.1f}%</b> of Harris voters returned<extra></extra>',
+      text: flipped.map(f => f.d_retention != null ? f.d_retention.toFixed(0) + '%' : ''),
+      textposition: 'outside', textfont: { size: 10, color: '#1d6fb8' },
+    };
+    const traceR = {
+      x: flipped.map(f => -(f.r_retention || 0)),
+      y: counties_y,
+      type: 'bar', orientation: 'h', name: 'Rep retention',
+      marker: { color: '#e63946' },
+      hovertemplate: '%{y}: <b>%{customdata:.1f}%</b> of Trump voters returned<extra></extra>',
+      customdata: flipped.map(f => f.r_retention || 0),
+      text: flipped.map(f => f.r_retention != null ? f.r_retention.toFixed(0) + '%' : ''),
+      textposition: 'outside', textfont: { size: 10, color: '#e63946' },
+    };
+    const layout = {
+      barmode: 'overlay',
+      margin: { l: 90, r: 50, t: 8, b: 36 },
+      height: Math.max(360, flipped.length * 22 + 60),
+      showlegend: true,
+      legend: { orientation: 'h', y: 1.08, x: 0.5, xanchor: 'center', font: { size: 11 } },
+      xaxis: { title: { text: 'Voter retention vs 2024 (%)', font: { size: 11 } }, range: [-50, 60], tickvals: [-40,-20,0,20,40], ticktext: ['40%','20%','0','20%','40%'], gridcolor: 'rgba(0,0,0,0.05)', zerolinecolor: 'rgba(0,0,0,0.3)', zerolinewidth: 1.5 },
+      yaxis: { automargin: true, tickfont: { size: 11 } },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      font: { family: 'Inter, system-ui, sans-serif', size: 11 },
+      annotations: [
+        { x: -25, y: 1.12, xref: 'x', yref: 'paper', text: '← Republican retention', showarrow: false, font: { size: 11, color: '#e63946' } },
+        { x: 25, y: 1.12, xref: 'x', yref: 'paper', text: 'Democratic retention →', showarrow: false, font: { size: 11, color: '#1d6fb8' } },
+      ],
+    };
+    Plotly.newPlot('swing-chart', [traceR, traceD], layout, { responsive: true, displayModeBar: false });
+
+    // Summary stat
+    const flipped_d_avg = flipped.reduce((s,f) => s + (f.d_retention||0), 0) / flipped.length;
+    const flipped_r_avg = flipped.reduce((s,f) => s + (f.r_retention||0), 0) / flipped.length;
+    document.getElementById('swing-summary').innerHTML =
+      `<span class="mobil-stat"><span class="l">Counties flipped</span><span class="v">${flipped.length}</span></span>` +
+      `<span class="mobil-stat"><span class="l">Avg D-retention (flipped)</span><span class="v" style="color:#1d6fb8">${flipped_d_avg.toFixed(1)}%</span></span>` +
+      `<span class="mobil-stat"><span class="l">Avg R-retention (flipped)</span><span class="v" style="color:#e63946">${flipped_r_avg.toFixed(1)}%</span></span>` +
+      `<span class="mobil-stat"><span class="l">D-vs-R retention gap</span><span class="v">${(flipped_d_avg - flipped_r_avg).toFixed(1)}pp</span></span>`;
+  }
+
+  // =================================================================
+  // Demographic quartile chart
+  // =================================================================
+  state.demoqMetric = 'pct_black';
+  function renderDemoq() {
+    const key = state.demoqMetric;
+    const qdata = (window.GA_QUARTILES || {})[key] || [];
+    const labelMap = { pct_black: '% Black population', median_income: 'Median household income', pct_bachelors_plus_25: "% w/ Bachelor's+" };
+    const fmt = key === 'median_income' ? v => '$' + (v/1000).toFixed(0) + 'k' : v => v.toFixed(0) + '%';
+    const xLabels = qdata.map(q => `Q${q.q}\n(${fmt(q.demo_lo)}–${fmt(q.demo_hi)})`);
+
+    // Two side-by-side subplots so bars don't fight on dual y-axes
+    const traceMob = {
+      x: xLabels, y: qdata.map(q => q.mobilization),
+      type: 'bar', name: 'Mobilization (PSC ÷ 2024)',
+      marker: { color: '#0e7490' },
+      text: qdata.map(q => q.mobilization.toFixed(1) + '%'), textposition: 'outside',
+      textfont: { size: 11, color: '#0e7490', family: 'Inter, sans-serif' },
+      hovertemplate: '%{x}<br><b>%{y:.1f}%</b> mobilization<extra></extra>',
+      xaxis: 'x', yaxis: 'y',
+    };
+    const traceShift = {
+      x: xLabels, y: qdata.map(q => q.margin_shift),
+      type: 'bar', name: 'Margin shift (pp toward Dems)',
+      marker: { color: '#1d6fb8' },
+      text: qdata.map(q => '+' + q.margin_shift.toFixed(1) + 'pp'), textposition: 'outside',
+      textfont: { size: 11, color: '#1d6fb8', family: 'Inter, sans-serif' },
+      hovertemplate: '%{x}<br><b>+%{y:.1f}pp</b> shift<extra></extra>',
+      xaxis: 'x2', yaxis: 'y2',
+    };
+    const layout = {
+      grid: { rows: 1, columns: 2, pattern: 'independent', xgap: 0.12 },
+      margin: { l: 56, r: 24, t: 32, b: 70 },
+      height: 360,
+      showlegend: false,
+      xaxis: { title: { text: '<b>Mobilization vs 2024</b><br><span style="font-size:10px;color:#666">' + labelMap[key] + ' — quartiles</span>', font: { size: 11 } }, tickfont: { size: 10 } },
+      xaxis2: { title: { text: '<b>Margin shift toward Dems</b><br><span style="font-size:10px;color:#666">' + labelMap[key] + ' — quartiles</span>', font: { size: 11 } }, tickfont: { size: 10 } },
+      yaxis: { title: { text: 'PSC ballots / 2024 ballots (%)', font: { size: 10, color: '#0e7490' } }, gridcolor: 'rgba(0,0,0,0.05)', range: [0, Math.max(...qdata.map(q=>q.mobilization)) * 1.25] },
+      yaxis2: { title: { text: 'pp toward Dems', font: { size: 10, color: '#1d6fb8' } }, gridcolor: 'rgba(0,0,0,0.05)', range: [0, Math.max(...qdata.map(q=>q.margin_shift)) * 1.25] },
+      paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+      font: { family: 'Inter, system-ui, sans-serif' },
+    };
+    Plotly.newPlot('demoq-chart', [traceMob, traceShift], layout, { responsive: true, displayModeBar: false });
+  }
+
   function renderAll() {
     renderKPIs();
     renderMap();
     renderMethodChart();
     renderCDChart();
     renderMobilization();
+    renderShiftMap();
+    renderSwingChart();
+    renderDemoq();
     renderScatter();
     renderTable();
   }

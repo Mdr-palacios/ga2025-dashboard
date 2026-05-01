@@ -146,6 +146,49 @@
       <p class="hint">PSC ballots cast ÷ prior cycle ballots, by county. Higher = the PSC race held its weight better in that county. Statewide retention: <strong id="mobil-state">—</strong>.</p>
     </section>
 
+    <!-- WHAT FLIPPED GEORGIA section -->
+    <section class="section-divider">
+      <h2 class="section-title">What flipped Georgia</h2>
+      <p class="section-lead">Three lenses on the Democratic overperformance: how margins shifted vs the 2024 baseline, who actually showed up across demographic groups, and where the 21 county flips came from — mobilization or demobilization.</p>
+    </section>
+
+    <!-- Margin shift map -->
+    <section class="card card-shift">
+      <div class="card-head">
+        <h3>Margin shift vs 2024 presidential</h3>
+        <span class="muted">PSC D2 margin − Harris/Trump margin (pp)</span>
+      </div>
+      <div id="shift-summary" class="shift-summary"></div>
+      <div id="shift-map" class="map shift-map"></div>
+      <div id="shift-legend" class="legend-bar"></div>
+      <p class="hint">Every county shifted Democratic. Bluer = larger Dem overperformance vs the 2024 presidential margin. Hover for county detail.</p>
+    </section>
+
+    <!-- Swing decomposition -->
+    <section class="card card-swing">
+      <div class="card-head">
+        <h3>Where did the flips come from?</h3>
+        <span class="muted">D-retention vs R-retention in the 21 flipped counties</span>
+      </div>
+      <div class="swing-summary" id="swing-summary"></div>
+      <div id="swing-chart" class="chart"></div>
+      <p class="hint">Bars show what share of each party's 2024 voters returned in 2025. Statewide, Dems retained <strong id="swing-state-d">—</strong> of Harris voters; Republicans retained only <strong id="swing-state-r">—</strong> of Trump voters. The flip story is overwhelmingly Republican demobilization.</p>
+    </section>
+
+    <!-- Demographic split -->
+    <section class="card card-demoq">
+      <div class="card-head">
+        <h3>Who showed up: demographic split</h3>
+        <div class="seg-group" id="demoq-toggle">
+          <button class="seg-btn active" data-demoq="pct_black">% Black</button>
+          <button class="seg-btn" data-demoq="median_income">Income</button>
+          <button class="seg-btn" data-demoq="pct_bachelors_plus_25">College</button>
+        </div>
+      </div>
+      <div id="demoq-chart" class="chart"></div>
+      <p class="hint" id="demoq-hint">Counties grouped into quartiles by demographic. Bars: ballot-weighted average mobilization (PSC ÷ 2024) and margin shift in each quartile.</p>
+    </section>
+
     <!-- Demographic correlations -->
     <section class="card card-demo">
       <div class="card-head">
